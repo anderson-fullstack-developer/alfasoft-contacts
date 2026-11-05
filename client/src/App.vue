@@ -23,9 +23,11 @@ async function signOut() {
     <div class="container app-header__content">
       <RouterLink :to="{ name: 'contacts' }" class="app-header__title">Contactos</RouterLink>
       <nav class="app-header__actions" aria-label="Principal">
-        <RouterLink :to="{ name: 'new-contact' }" class="button button--primary">Novo contacto</RouterLink>
-        <button v-if="isAuthenticated" type="button" class="button" @click="signOut">Sair</button>
-        <RouterLink v-else :to="{ name: 'login' }" class="button">Entrar</RouterLink>
+        <template v-if="isAuthenticated">
+          <RouterLink :to="{ name: 'new-contact' }" class="button button--primary">Novo contacto</RouterLink>
+          <button type="button" class="button" @click="signOut">Sair</button>
+        </template>
+        <RouterLink v-else :to="{ name: 'login' }" class="button button--primary">Entrar</RouterLink>
       </nav>
     </div>
   </header>

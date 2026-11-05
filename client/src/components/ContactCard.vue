@@ -1,6 +1,7 @@
 <script setup>
 defineProps({
-  contact: { type: Object, required: true }
+  contact: { type: Object, required: true },
+  canManage: { type: Boolean, default: false }
 });
 
 defineEmits(['delete']);
@@ -26,7 +27,7 @@ defineEmits(['delete']);
         </div>
       </dl>
     </div>
-    <div class="card__actions">
+    <div v-if="canManage" class="card__actions">
       <RouterLink :to="{ name: 'contact-details', params: { id: contact.id } }" class="button">Detalhes</RouterLink>
       <RouterLink :to="{ name: 'edit-contact', params: { id: contact.id } }" class="button">Editar</RouterLink>
       <button type="button" class="button button--danger" @click="$emit('delete', contact)">Eliminar</button>

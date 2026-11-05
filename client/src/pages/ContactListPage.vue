@@ -1,6 +1,5 @@
 <script setup>
 import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
 import { deleteContact, listContacts } from '../api/contacts.js';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import ContactCard from '../components/ContactCard.vue';
@@ -8,7 +7,6 @@ import StatusMessage from '../components/StatusMessage.vue';
 import { useAuth } from '../composables/useAuth.js';
 import { useNotification } from '../composables/useNotification.js';
 
-const router = useRouter();
 const { isAuthenticated } = useAuth();
 const { notify } = useNotification();
 
@@ -34,10 +32,6 @@ async function loadContacts() {
 }
 
 function askToDelete(contact) {
-  if (!isAuthenticated.value) {
-    router.push({ name: 'login' });
-    return;
-  }
   contactToDelete.value = contact;
   deleteError.value = '';
   dialogOpen.value = true;
@@ -68,6 +62,9 @@ onMounted(loadContacts);
 
 <template>
   <h1 class="page-title">Lista de contactos</h1>
+  <p v-if="!isAuthenticated" class="page-intro">
+    <RouterLink :to="{ name: 'login' }">Inicia sessão</RouterLink> para ver detalhes, criar, editar ou eliminar contactos.
+  </p>
 
   <StatusMessage v-if="loading" variant="loading" title="A carregar os contactos…" />
 
@@ -76,11 +73,19 @@ onMounted(loadContacts);
   </StatusMessage>
 
   <StatusMessage v-else-if="contacts.length === 0" title="Ainda não existem contactos.">
-    <RouterLink :to="{ name: 'new-contact' }" class="button button--primary">Adicionar o primeiro contacto</RouterLink>
+    <RouterLink v-if="isAuthenticated" :to="{ name: 'new-contact' }" class="button button--primary">
+      Adicionar o primeiro contacto
+    </RouterLink>
   </StatusMessage>
 
   <div v-else class="card-grid">
-    <ContactCard v-for="contact in contacts" :key="contact.id" :contact="contact" @delete="askToDelete" />
+    <ContactCard
+      v-for="contact in contacts"
+      :key="contact.id"
+      :contact="contact"
+      :can-manage="isAuthenticated"
+      @delete="askToDelete"
+    />
   </div>
 
   <ConfirmDialog

@@ -29,7 +29,7 @@ controllers/        Rotas da API
 models/             Consultas SQL
 validation/         Regras partilhadas pela API e pelo formulário
 client/             Código-fonte do frontend Vue
-public/             Frontend compilado (gerado, fora do Git)
+public/             Frontend compilado (gerado pelo npm install, fora do Git)
 uploads/            Fotografias (fora do Git)
 database/schema.sql Estrutura da tabela
 scripts/            Utilitário para gerar o hash da password
@@ -44,6 +44,8 @@ Requer Node.js 22 ou superior e uma base de dados MariaDB.
 npm install
 cp .env.example .env
 ```
+
+O `npm install` também compila o frontend para `public/`. Por isso, precisa das dependências de desenvolvimento e falha com `--omit=dev`.
 
 1. Preenche o `.env` com os dados da base de dados.
 2. Cria a tabela com `database/schema.sql`.
@@ -60,9 +62,10 @@ cp .env.example .env
 Para usar a aplicação compilada, em `http://localhost:3000`:
 
 ```bash
-npm run build
 npm start
 ```
+
+Depois de alterar o frontend, volta a compilá-lo com `npm run build`.
 
 Para desenvolver o frontend com recarregamento automático, usa dois terminais:
 
@@ -72,6 +75,23 @@ npm run dev
 ```
 
 O cookie de sessão é `Secure`, por isso o login exige HTTPS ou `localhost`.
+
+## Publicação
+
+No alojamento do exercício, o projeto fica na pasta `html`:
+
+```bash
+npm install
+pm2 restart all
+```
+
+O nginx do alojamento encaminha os pedidos para a porta 22587, mas o `ecosystem.config.cjs` fornecido define a 45257 e pertence ao `root`. Por isso, a aplicação foi iniciada com:
+
+```bash
+PORT=22587 pm2 restart index --update-env
+```
+
+Iniciar a aplicação com `pm2 start ecosystem.config.cjs` volta a usar a 45257, e o site responde 502 até o nginx ou a porta serem alinhados.
 
 ## API
 
@@ -84,11 +104,13 @@ As respostas são em JSON. Os erros de validação seguem o formato `{ "errors":
 | `POST` | `/contacts` | Sim | Criar um contacto (`multipart/form-data`) | 201, 400, 401, 409 |
 | `PUT` | `/contacts/:id` | Sim | Editar um contacto (`multipart/form-data`) | 200, 400, 401, 404, 409 |
 | `DELETE` | `/contacts/:id` | Sim | Eliminar um contacto | 204, 401, 404 |
-| `POST` | `/auth/login` | Não | Iniciar sessão | 200, 401 |
+| `POST` | `/auth/login` | Não | Iniciar sessão | 200, 401, 429 |
 | `POST` | `/auth/logout` | Não | Terminar sessão | 204 |
 | `GET` | `/auth/me` | Não | Consultar a sessão atual | 200 |
 
 Os campos de contacto são `name`, `contact`, `email` e `picture`. Ao editar, a fotografia atual mantém-se se não for enviada outra.
+
+Respostas comuns a vários pedidos: os pedidos que alteram dados vindos de outra origem devolvem 403, um pedido malformado devolve 400, um corpo JSON acima do limite devolve 413, e um erro inesperado devolve 500.
 
 Para experimentar a API manualmente, o ficheiro `requests.http` tem os pedidos prontos para a extensão REST Client do VS Code.
 
@@ -123,6 +145,7 @@ npm run test:db:down
 
 ## Limitações conhecidas
 
+- O nginx também aceita HTTP. O frontend redireciona para HTTPS, mas um pedido direto à API por HTTP não é bloqueado pela aplicação.
 - Se o contacto e o email estiverem ambos duplicados, a API indica um de cada vez.
 - O limite de login fica em memória: reinicia com o servidor e não é partilhado entre processos.
 - Atrás do nginx, o limite de login é comum a todos os visitantes, porque o proxy não envia um IP de confiança. O bloqueio dura 15 minutos e começa ao fim de 10 tentativas falhadas por endereço local do proxy, o que pode dar cerca de 20 no total se ele alternar entre IPv4 e IPv6.

@@ -15,8 +15,12 @@ export default defineConfig({
     // The form imports the validation rules from outside client/.
     fs: { allow: ['..'] },
     proxy: {
+      '/auth': API_SERVER,
       '/contacts': API_SERVER,
       '/uploads': API_SERVER
     }
+  },
+  test: {
+    environment: 'happy-dom'
   }
 });

@@ -9,9 +9,11 @@
   },
   "scripts": {
     "start": "node index.js",
-    "test": "node --test \"tests/*.test.js\"",
+    "test": "npm run test:api && npm run test:form",
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "test:api": "node --test \"tests/*.test.js\"",
+    "test:form": "vitest run"
   },
   "dependencies": {
     "dotenv": "^16.0.3",
@@ -21,7 +23,10 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.10",
+    "@vue/test-utils": "2.4.11",
+    "happy-dom": "^21.0.4",
     "vite": "^8.3.6",
+    "vitest": "^5.1.0",
     "vue": "^3.5.45",
     "vue-router": "^5.4.0"
   }

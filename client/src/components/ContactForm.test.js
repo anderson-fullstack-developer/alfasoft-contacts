@@ -66,6 +66,20 @@ describe('ContactForm ao criar', () => {
     expect(errorOf(wrapper, 'name').exists()).toBe(false);
   });
 
+  test.each(['9999999999', 'Maria123', '!!!!!!!!'])('recusa o nome %s', async (name) => {
+    const wrapper = mountForm();
+    await fillFields(wrapper, { ...VALID_FIELDS, name });
+    await submit(wrapper);
+    expect(errorOf(wrapper, 'name').text()).toContain('só pode ter letras');
+  });
+
+  test.each(['José António', "Sinead O'Connor", 'Ana-Rita Silva'])('aceita o nome %s', async (name) => {
+    const wrapper = mountForm();
+    await fillFields(wrapper, { ...VALID_FIELDS, name });
+    await submit(wrapper);
+    expect(errorOf(wrapper, 'name').exists()).toBe(false);
+  });
+
   test.each(['12345678', '1234567890', '12345678a'])('recusa o contacto %s', async (contact) => {
     const wrapper = mountForm();
     await fillFields(wrapper, { ...VALID_FIELDS, contact });
@@ -73,7 +87,7 @@ describe('ContactForm ao criar', () => {
     expect(errorOf(wrapper, 'phone').text()).toContain('9 dígitos');
   });
 
-  test.each(['sem-arroba.pt', 'a@b', 'a b@c.pt'])('recusa o email %s', async (email) => {
+  test.each(['sem-arroba.pt', 'a@b', 'a b@c.pt', 'a@b..pt', '.a@b.pt', 'a@b.p'])('recusa o email %s', async (email) => {
     const wrapper = mountForm();
     await fillFields(wrapper, { ...VALID_FIELDS, email });
     await submit(wrapper);

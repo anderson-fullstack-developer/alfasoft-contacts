@@ -9,7 +9,7 @@ Aplicação web de gestão de contactos, desenvolvida para o exercício técnico
 - Criação e edição com o mesmo formulário.
 - Eliminação com modal de confirmação.
 - Validação no servidor e no formulário, com as mesmas regras:
-  - nome com mais de 5 caracteres;
+  - nome com mais de 5 caracteres, só com letras, espaços, hífens, apóstrofos e pontos;
   - contacto com exatamente 9 dígitos;
   - email válido;
   - fotografia obrigatória ao criar (JPEG, PNG ou WebP, até 5 MB);

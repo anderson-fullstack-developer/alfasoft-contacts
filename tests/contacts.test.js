@@ -18,7 +18,7 @@ function uniqueFields() {
   sequence += 1;
   const suffix = String(sequence).padStart(4, '0');
   return {
-    name: `Contacto de teste ${suffix}`,
+    name: `Contacto de teste ${suffix.replace(/\d/g, (digit) => 'abcdefghij'[digit])}`,
     contact: `90000${suffix}`,
     email: `teste${suffix}@exemplo.pt`
   };
@@ -81,13 +81,31 @@ describe('validação ao criar', () => {
     assert.equal(contact.name, 'Marias');
   });
 
+  for (const name of ['9999999999', 'Maria123', 'Maria_Silva', '!!!!!!!!', '------', 'Maria Silva-']) {
+    test(`recusa o nome "${name}"`, async () => {
+      await assertFieldError(await post({ ...uniqueFields(), name }), 'name');
+    });
+  }
+
+  for (const name of ['José António', "Sinead O'Connor", 'Ana-Rita Silva', 'J. R. Tolkien']) {
+    test(`aceita o nome "${name}"`, async () => {
+      const contact = await createContact({ name });
+      assert.equal(contact.name, name);
+    });
+  }
+
+  test('reduz espaços repetidos no nome', async () => {
+    const contact = await createContact({ name: 'Maria    Silva' });
+    assert.equal(contact.name, 'Maria Silva');
+  });
+
   for (const contact of ['12345678', '1234567890', '12345678a', '123 45678', ' 123456789']) {
     test(`recusa o contacto "${contact}"`, async () => {
       await assertFieldError(await post({ ...uniqueFields(), contact }), 'contact');
     });
   }
 
-  for (const email of ['', 'sem-arroba.pt', 'a@b', 'a b@c.pt', 'a@@b.pt']) {
+  for (const email of ['', 'sem-arroba.pt', 'a@b', 'a b@c.pt', 'a@@b.pt', 'a@b..pt', '.a@b.pt', 'a.@b.pt', 'a..b@c.pt', 'a@b.p', 'a@-b.pt', 'a@b.123']) {
     test(`recusa o email "${email}"`, async () => {
       await assertFieldError(await post({ ...uniqueFields(), email }), 'email');
     });
@@ -167,7 +185,7 @@ describe('leitura', () => {
   }
 
   test('o nome é guardado literalmente, sem injeção de SQL', async () => {
-    const name = "Robert'); DROP TABLE contacts;--";
+    const name = "Ana' OR 'a Silva";
     const contact = await createContact({ name });
     const response = await api(`${baseUrl}/contacts/${contact.id}`);
     assert.equal((await response.json()).name, name);

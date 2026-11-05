@@ -1,8 +1,10 @@
 // Shared by the API and the Vue form, so both apply exactly the same rules.
 // The API is the authority: the form only gives earlier feedback.
 
+// Words of letters (any alphabet, with accents), joined by spaces, apostrophes, hyphens or dots.
+const NAME_PATTERN = /^\p{L}[\p{L}\p{M}]*(?:[ '’.-]+\p{L}[\p{L}\p{M}]*)*\.?$/u;
 const PHONE_PATTERN = /^\d{9}$/;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_PATTERN = /^[^\s@.]+(?:\.[^\s@.]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/;
 
 const MAX_NAME_LENGTH = 255;
 const MAX_EMAIL_LENGTH = 254;
@@ -21,7 +23,7 @@ const asText = (value) => (typeof value === 'string' ? value : '');
 
 export function validateContact(body = {}) {
   const values = {
-    name: asText(body.name).trim(),
+    name: asText(body.name).trim().replace(/\s+/g, ' '),
     contact: asText(body.contact),
     email: asText(body.email).trim().toLowerCase()
   };
@@ -32,6 +34,8 @@ export function validateContact(body = {}) {
     errors.name = 'O nome tem de ter mais de 5 caracteres.';
   } else if (values.name.length > MAX_NAME_LENGTH) {
     errors.name = `O nome não pode ter mais de ${MAX_NAME_LENGTH} caracteres.`;
+  } else if (!NAME_PATTERN.test(values.name)) {
+    errors.name = 'O nome só pode ter letras, espaços, hífens, apóstrofos e pontos.';
   }
 
   if (!PHONE_PATTERN.test(values.contact)) {

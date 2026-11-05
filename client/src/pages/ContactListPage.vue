@@ -7,7 +7,7 @@ import StatusMessage from '../components/StatusMessage.vue';
 import TextField from '../components/TextField.vue';
 import { useAuth } from '../composables/useAuth.js';
 import { useNotification } from '../composables/useNotification.js';
-import { filterContacts } from '../contactSearch.js';
+import { filterContacts } from '../utils/contactSearch.js';
 
 const { isAuthenticated } = useAuth();
 const { notify } = useNotification();

@@ -110,6 +110,15 @@ describe('validação ao criar', () => {
     await assertFieldError(await post(uniqueFields(), big), 'picture');
   });
 
+  test('recusa envio multipart malformado', async () => {
+    const response = await fetch(`${baseUrl}/contacts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'multipart/form-data; boundary=limite' },
+      body: '--limite\r\nConteudo sem cabecalhos validos'
+    });
+    await assertFieldError(response, 'picture');
+  });
+
   test('indica todos os campos inválidos na mesma resposta', async () => {
     const response = await fetch(`${baseUrl}/contacts`, { method: 'POST', body: new FormData() });
     assert.equal(response.status, 400);

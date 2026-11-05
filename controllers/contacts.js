@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import multer from 'multer';
-import db from '../db.js';
 import {
-  MAX_PICTURE_BYTES,
-  UPLOADS_URL,
-  detectImageExtension,
-  removePicture,
-  savePicture
-} from '../pictures.js';
-import { validateContact } from '../validation/contact.js';
+  deleteContact,
+  findAllContacts,
+  findContactById,
+  insertContact,
+  updateContact
+} from '../models/contacts.js';
+import { UPLOADS_URL, detectImageExtension, removePicture, savePicture } from '../pictures.js';
+import { MAX_PICTURE_BYTES, PICTURE_MESSAGES, validateContact } from '../validation/contact.js';
 
 const DUPLICATE_ENTRY = 1062;
 const VALID_ID = /^[1-9]\d*$/;
@@ -31,28 +31,18 @@ const toResponse = (row) => ({
   picture: `${UPLOADS_URL}/${row.picture}`
 });
 
-const notFound = (res) => res.status(404).json({ message: 'Contacto não encontrado.' });
+const sendNotFound = (res) => res.status(404).json({ message: 'Contacto não encontrado.' });
+
+const hasErrors = (errors) => Object.keys(errors).length > 0;
+
+const findContact = (id) => (VALID_ID.test(id) ? findContactById(id) : null);
 
 function receivePicture(req, res, next) {
   parsePicture(req, res, (err) => {
-    if (err instanceof multer.MulterError) {
-      const message =
-        err.code === 'LIMIT_FILE_SIZE'
-          ? 'A fotografia não pode ter mais de 5 MB.'
-          : 'O envio da fotografia é inválido.';
-      return res.status(400).json({ errors: { picture: message } });
-    }
-    return next(err);
+    if (!err) return next();
+    const picture = err.code === 'LIMIT_FILE_SIZE' ? PICTURE_MESSAGES.tooLarge : PICTURE_MESSAGES.invalidUpload;
+    return res.status(400).json({ errors: { picture } });
   });
-}
-
-async function findById(id) {
-  if (!VALID_ID.test(id)) return null;
-  const [rows] = await db.execute(
-    'SELECT id, name, contact, email, picture FROM contacts WHERE id = ?',
-    [id]
-  );
-  return rows[0] ?? null;
 }
 
 function checkContact(req, { pictureRequired }) {
@@ -60,33 +50,32 @@ function checkContact(req, { pictureRequired }) {
   const extension = req.file ? detectImageExtension(req.file.buffer) : null;
 
   if (req.file && !extension) {
-    errors.picture = 'A fotografia tem de ser JPEG, PNG ou WebP.';
+    errors.picture = PICTURE_MESSAGES.invalidType;
   } else if (!req.file && pictureRequired) {
-    errors.picture = 'A fotografia é obrigatória.';
+    errors.picture = PICTURE_MESSAGES.required;
   }
 
   return { values, errors, extension };
 }
 
-const hasErrors = (errors) => Object.keys(errors).length > 0;
+function sendDuplicateOrRethrow(err, res) {
+  if (err.errno !== DUPLICATE_ENTRY) throw err;
 
-function duplicateErrors(err) {
-  if (err.errno !== DUPLICATE_ENTRY) return null;
-  return err.sqlMessage.includes('uq_contacts_contact')
+  const errors = err.sqlMessage.includes('uq_contacts_contact')
     ? { contact: 'Já existe um contacto com este número.' }
     : { email: 'Já existe um contacto com este email.' };
+
+  res.status(409).json({ errors });
 }
 
 router.get('/', asyncHandler(async (req, res) => {
-  const [rows] = await db.execute(
-    'SELECT id, name, contact, email, picture FROM contacts ORDER BY id DESC'
-  );
-  res.json(rows.map(toResponse));
+  const contacts = await findAllContacts();
+  res.json(contacts.map(toResponse));
 }));
 
 router.get('/:id', asyncHandler(async (req, res) => {
-  const contact = await findById(req.params.id);
-  if (!contact) return notFound(res);
+  const contact = await findContact(req.params.id);
+  if (!contact) return sendNotFound(res);
   res.json(toResponse(contact));
 }));
 
@@ -97,22 +86,17 @@ router.post('/', receivePicture, asyncHandler(async (req, res) => {
   const picture = await savePicture(req.file.buffer, extension);
 
   try {
-    const [result] = await db.execute(
-      'INSERT INTO contacts (name, contact, email, picture) VALUES (?, ?, ?, ?)',
-      [values.name, values.contact, values.email, picture]
-    );
-    res.status(201).json(toResponse({ id: result.insertId, ...values, picture }));
+    const id = await insertContact({ ...values, picture });
+    res.status(201).json(toResponse({ id, ...values, picture }));
   } catch (err) {
     await removePicture(picture);
-    const duplicate = duplicateErrors(err);
-    if (duplicate) return res.status(409).json({ errors: duplicate });
-    throw err;
+    sendDuplicateOrRethrow(err, res);
   }
 }));
 
 router.put('/:id', receivePicture, asyncHandler(async (req, res) => {
-  const current = await findById(req.params.id);
-  if (!current) return notFound(res);
+  const current = await findContact(req.params.id);
+  if (!current) return sendNotFound(res);
 
   const { values, errors, extension } = checkContact(req, { pictureRequired: false });
   if (hasErrors(errors)) return res.status(400).json({ errors });
@@ -121,15 +105,10 @@ router.put('/:id', receivePicture, asyncHandler(async (req, res) => {
   const picture = newPicture ?? current.picture;
 
   try {
-    await db.execute(
-      'UPDATE contacts SET name = ?, contact = ?, email = ?, picture = ? WHERE id = ?',
-      [values.name, values.contact, values.email, picture, current.id]
-    );
+    await updateContact(current.id, { ...values, picture });
   } catch (err) {
     if (newPicture) await removePicture(newPicture);
-    const duplicate = duplicateErrors(err);
-    if (duplicate) return res.status(409).json({ errors: duplicate });
-    throw err;
+    return sendDuplicateOrRethrow(err, res);
   }
 
   if (newPicture) await removePicture(current.picture);
@@ -137,10 +116,10 @@ router.put('/:id', receivePicture, asyncHandler(async (req, res) => {
 }));
 
 router.delete('/:id', asyncHandler(async (req, res) => {
-  const current = await findById(req.params.id);
-  if (!current) return notFound(res);
+  const current = await findContact(req.params.id);
+  if (!current) return sendNotFound(res);
 
-  await db.execute('DELETE FROM contacts WHERE id = ?', [current.id]);
+  await deleteContact(current.id);
   await removePicture(current.picture);
   res.status(204).end();
 }));

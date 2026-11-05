@@ -1,10 +1,14 @@
 <script setup>
-defineProps({
+import { computed } from 'vue';
+
+const props = defineProps({
   contact: { type: Object, required: true },
   canManage: { type: Boolean, default: false }
 });
 
 defineEmits(['delete']);
+
+const emailParts = computed(() => props.contact.email.split('@'));
 </script>
 
 <template>
@@ -23,7 +27,8 @@ defineEmits(['delete']);
       </div>
       <div>
         <dt>Email</dt>
-        <dd>{{ contact.email }}</dd>
+        <!-- A long address breaks after the @ rather than in the middle of the domain. -->
+        <dd>{{ emailParts[0] }}@<wbr />{{ emailParts[1] }}</dd>
       </div>
     </dl>
     <div v-if="canManage" class="card__actions">

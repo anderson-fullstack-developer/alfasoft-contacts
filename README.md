@@ -9,9 +9,9 @@ Aplicação web de gestão de contactos, desenvolvida para o exercício técnico
 - Criação e edição com o mesmo formulário.
 - Eliminação com modal de confirmação.
 - Validação no servidor e no formulário, com as mesmas regras:
-  - nome com mais de 5 caracteres, só com letras, espaços, hífens, apóstrofos e pontos;
+  - nome com mais de 5 caracteres e pelo menos uma letra;
   - contacto com exatamente 9 dígitos;
-  - email válido, com letras, dígitos e `._%+-` antes do `@`;
+  - email válido;
   - fotografia obrigatória ao criar (JPEG, PNG ou WebP, até 5 MB);
   - contacto e email únicos.
 - Autenticação: sem sessão, só a lista está acessível.
@@ -100,21 +100,30 @@ Para experimentar a API manualmente, o ficheiro `requests.http` tem os pedidos p
 - **Sessão sem estado:** um token assinado com HMAC fica num cookie `HttpOnly`, `Secure` e `SameSite=Lax`, e a password é guardada com `scrypt`. Basta um utilizador, por isso as credenciais ficam em variáveis de ambiente.
 - **Cabeçalhos de segurança:** todas as respostas incluem `X-Content-Type-Options`, `X-Frame-Options` e `Content-Security-Policy`.
 - **Fotografias em pedidos simultâneos:** a edição e a eliminação usam uma transação, para nenhum ficheiro ficar órfão.
+- **Pedidos de outros sites:** os pedidos que alteram dados vindos de outra origem são recusados com 403. O `SameSite=Lax` não chega, porque os subdomínios vizinhos contam como o mesmo site.
+- **Limite de login:** depois de 10 tentativas falhadas em 15 minutos, o login devolve 429.
 - **Funcionalidades nativas:** o modal usa o elemento `<dialog>` e os testes da API usam `node:test`. O `multer` serve apenas para ler o envio do ficheiro.
 
 ## Testes
 
+Os testes da API nunca usam a base de dados do `.env`. Ligam-se a uma MariaDB local em `127.0.0.1:3307`, com base de dados, utilizador e password `contacts_test`, e guardam as fotografias numa pasta temporária.
+
+Essa base pode ser qualquer instalação local com `database/schema.sql` aplicado, ou o contentor definido em `docker-compose.test.yml`:
+
 ```bash
+npm run test:db:up
 npm test
+npm run test:db:down
 ```
 
 - **API (`npm run test:api`):** validações, duplicados, contactos inexistentes, fotografias, autenticação e injeção de SQL, com pedidos HTTP reais.
 - **Formulário (`npm run test:form`):** erros de validação ao criar e editar, com Vitest e Vue Test Utils.
 
-Os testes da API usam a base de dados configurada no `.env`. Criam contactos temporários e apagam-nos no fim, por isso é preferível usar uma base de dados de desenvolvimento.
 
 ## Limitações conhecidas
 
 - Se o contacto e o email estiverem ambos duplicados, a API indica um de cada vez.
-- O login não limita o número de tentativas.
+- O limite de login fica em memória: reinicia com o servidor e não é partilhado entre processos.
+- Um cookie continua válido até expirar, mesmo depois do logout, porque a sessão não fica guardada no servidor.
+- A fotografia é verificada pelos primeiros bytes, por isso um ficheiro corrompido com um início válido é aceite.
 - Existe apenas um utilizador, sem registo de contas.

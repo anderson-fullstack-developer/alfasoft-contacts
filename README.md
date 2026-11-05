@@ -129,7 +129,7 @@ Para experimentar a API manualmente, o ficheiro `requests.http` tem os pedidos p
 
 ## Testes
 
-Os testes da API nunca usam a base de dados do `.env`. Ligam-se a uma MariaDB local em `127.0.0.1:3307`, com base de dados, utilizador e password `contacts_test`, e guardam as fotografias numa pasta temporária.
+Os testes nunca usam a base de dados do `.env`. Ligam-se a uma MariaDB local em `127.0.0.1:3307`, com base de dados, utilizador e password `contacts_test`, e guardam as fotografias numa pasta temporária.
 
 Essa base pode ser qualquer instalação local com `database/schema.sql` aplicado, ou o contentor definido em `docker-compose.test.yml`:
 
@@ -140,7 +140,10 @@ npm run test:db:down
 ```
 
 - **API (`npm run test:api`):** validações, duplicados, contactos inexistentes, fotografias, autenticação e injeção de SQL, com pedidos HTTP reais.
-- **Formulário (`npm run test:form`):** erros de validação ao criar e editar, com Vitest e Vue Test Utils.
+- **Componentes (`npm run test:form`):** formulário, cartão, pesquisa e redirecionamento para HTTPS, com Vitest e Vue Test Utils, sem base de dados.
+- **Funcionais (`npm run test:functional`):** a página real do formulário ligada à API real e à base isolada. Confirmam os erros mostrados ao criar e editar e o que fica gravado. O browser é simulado, por isso o cookie de sessão é colocado pelo teste.
+
+Os testes da API e os funcionais precisam da base isolada; os de componentes não.
 
 
 ## Limitações conhecidas

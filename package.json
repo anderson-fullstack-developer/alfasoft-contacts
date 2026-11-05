@@ -9,12 +9,13 @@
   },
   "scripts": {
     "start": "node index.js",
-    "test": "npm run test:api && npm run test:form",
+    "test": "npm run test:api && npm run test:form && npm run test:functional",
     "dev": "vite",
     "build": "vite build",
     "postinstall": "vite build",
     "test:api": "node --test \"tests/*.test.js\"",
     "test:form": "vitest run",
+    "test:functional": "vitest run --config vitest.functional.config.js",
     "test:db:up": "docker compose -f docker-compose.test.yml up -d --wait",
     "test:db:down": "docker compose -f docker-compose.test.yml down",
     "lint": "eslint ."

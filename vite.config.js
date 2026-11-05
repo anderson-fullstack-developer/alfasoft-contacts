@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import vue from '@vitejs/plugin-vue';
-import { defineConfig } from 'vite';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 const API_SERVER = 'http://localhost:3000';
 
@@ -21,6 +21,7 @@ export default defineConfig({
     }
   },
   test: {
-    environment: 'happy-dom'
+    environment: 'happy-dom',
+    exclude: [...configDefaults.exclude, '**/*.functional.test.js']
   }
 });

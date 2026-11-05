@@ -12,6 +12,7 @@
     "test": "npm run test:api && npm run test:form",
     "dev": "vite",
     "build": "vite build",
+    "postinstall": "vite build",
     "test:api": "node --test \"tests/*.test.js\"",
     "test:form": "vitest run",
     "test:db:up": "docker compose -f docker-compose.test.yml up -d --wait",

@@ -15,6 +15,8 @@ const app = express();
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
+  // Browsers only honour this over HTTPS, so local development over HTTP is unaffected.
+  'Strict-Transport-Security': 'max-age=86400',
   'Content-Security-Policy':
     "default-src 'self'; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 };

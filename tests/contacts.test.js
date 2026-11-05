@@ -195,6 +195,7 @@ describe('pedidos anormais', () => {
     const { headers } = await fetch(`${baseUrl}/contacts`);
     assert.equal(headers.get('x-content-type-options'), 'nosniff');
     assert.equal(headers.get('x-frame-options'), 'DENY');
+    assert.equal(headers.get('strict-transport-security'), 'max-age=86400');
     assert.ok(headers.get('content-security-policy'));
     assert.equal(headers.get('x-powered-by'), null);
   });

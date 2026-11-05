@@ -1,11 +1,11 @@
 // Shared by the API and the Vue form, so both apply exactly the same rules.
 // The API is the authority: the form only gives earlier feedback.
 
-// Words of letters (any alphabet, with accents), joined by spaces, apostrophes, hyphens or dots.
-const NAME_PATTERN = /^\p{L}[\p{L}\p{M}]*(?:[ '’.-]+\p{L}[\p{L}\p{M}]*)*\.?$/u;
-const NAME_ALLOWED_CHARACTER = /[\p{L}\p{M} '’.-]/u;
+const HAS_LETTER = /\p{L}/u;
+// Control and invisible formatting characters, such as null bytes and text direction overrides.
+const INVISIBLE_CHARACTER = /[\p{Cc}\p{Cf}]/u;
 const PHONE_PATTERN = /^\d{9}$/;
-const EMAIL_PATTERN = /^[a-z0-9_%+-]+(?:\.[a-z0-9_%+-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/;
+const EMAIL_PATTERN = /^[a-z0-9_%+'-]+(?:\.[a-z0-9_%+'-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/;
 
 const MAX_NAME_LENGTH = 255;
 const MAX_EMAIL_LENGTH = 254;
@@ -24,14 +24,10 @@ const asText = (value) => (typeof value === 'string' ? value : '');
 
 function findNameError(name) {
   if (!name) return 'Indica o nome.';
-  if (/\d/.test(name)) return 'O nome não pode ter números.';
-
-  const symbols = [...new Set(name)].filter((character) => !NAME_ALLOWED_CHARACTER.test(character));
-  if (symbols.length > 0) return `O nome não pode ter estes símbolos: ${symbols.join(' ')}`;
-
+  if (INVISIBLE_CHARACTER.test(name)) return 'O nome tem caracteres inválidos.';
+  if (!HAS_LETTER.test(name)) return 'O nome tem de ter pelo menos uma letra.';
   if (name.length <= 5) return `O nome tem de ter mais de 5 caracteres (tem ${name.length}).`;
   if (name.length > MAX_NAME_LENGTH) return `O nome não pode ter mais de ${MAX_NAME_LENGTH} caracteres.`;
-  if (!NAME_PATTERN.test(name)) return 'O nome tem de começar por uma letra e os separadores têm de estar entre palavras.';
   return null;
 }
 

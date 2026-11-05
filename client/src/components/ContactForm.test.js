@@ -68,11 +68,10 @@ describe('ContactForm ao criar', () => {
   });
 
   test.each([
-    ['9999999999', 'números'],
-    ['Anderson 11111', 'números'],
-    ['Maria_Silva', 'símbolos: _'],
-    ['!!!!!!!!', 'símbolos: !'],
-    ['------', 'começar por uma letra']
+    ['9999999999', 'pelo menos uma letra'],
+    ['!!!!!!!!', 'pelo menos uma letra'],
+    ['------', 'pelo menos uma letra'],
+    ['Maria\u202eSilva', 'caracteres inválidos']
   ])('o nome %s indica o motivo exato', async (name, expected) => {
     const wrapper = mountForm();
     await fillFields(wrapper, { ...VALID_FIELDS, name });
@@ -90,9 +89,9 @@ describe('ContactForm ao criar', () => {
 
   test('o erro desaparece enquanto o utilizador corrige, sem submeter', async () => {
     const wrapper = mountForm();
-    await wrapper.find('#contact-name').setValue('Anderson 11111');
+    await wrapper.find('#contact-name').setValue('99999999');
     await wrapper.find('#contact-name').trigger('blur');
-    expect(errorOf(wrapper, 'name').text()).toContain('números');
+    expect(errorOf(wrapper, 'name').text()).toContain('pelo menos uma letra');
 
     await wrapper.find('#contact-name').setValue('Anderson Neto');
     await nextTick();
@@ -150,7 +149,7 @@ describe('ContactForm ao criar', () => {
     wrapper.unmount();
   });
 
-  test.each(['José António', "Sinead O'Connor", 'Ana-Rita Silva'])('aceita o nome %s', async (name) => {
+  test.each(['José António', "Sinead O'Connor", 'Ana-Rita Silva', 'Teste 1'])('aceita o nome %s', async (name) => {
     const wrapper = mountForm();
     await fillFields(wrapper, { ...VALID_FIELDS, name });
     await submit(wrapper);

@@ -128,7 +128,7 @@ onBeforeUnmount(clearPreview);
       id="contact-name"
       v-model="form.name"
       label="Nome"
-      hint="Mais de 5 caracteres, só com letras, espaços, hífens, apóstrofos e pontos."
+      hint="Mais de 5 caracteres, com pelo menos uma letra."
       autocomplete="name"
       maxlength="255"
       :error="errors.name"

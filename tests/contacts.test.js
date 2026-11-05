@@ -81,13 +81,13 @@ describe('validação ao criar', () => {
     assert.equal(contact.name, 'Marias');
   });
 
-  for (const name of ['9999999999', 'Maria123', 'Maria_Silva', '!!!!!!!!', '------', 'Maria Silva-']) {
+  for (const name of ['9999999999', '!!!!!!!!', '------', '123 456', 'Maria\u0000Silva', 'Maria\u202eSilva', 'a'.repeat(256)]) {
     test(`recusa o nome "${name}"`, async () => {
       await assertFieldError(await post({ ...uniqueFields(), name }), 'name');
     });
   }
 
-  for (const name of ['José António', "Sinead O'Connor", 'Ana-Rita Silva', 'J. R. Tolkien']) {
+  for (const name of ['José António', "Sinead O'Connor", 'Ana-Rita Silva', 'J. R. Tolkien', 'Teste 1', 'Maria_123']) {
     test(`aceita o nome "${name}"`, async () => {
       const contact = await createContact({ name });
       assert.equal(contact.name, name);
@@ -105,11 +105,16 @@ describe('validação ao criar', () => {
     });
   }
 
-  for (const email of ['', 'sem-arroba.pt', 'a@b', 'a b@c.pt', 'a@@b.pt', 'a@b..pt', '.a@b.pt', 'a.@b.pt', 'a..b@c.pt', 'a@b.p', 'a@-b.pt', 'a@b.123', '<script>alert(1)</script>@b.pt', "a'--@b.pt", 'a,b@c.pt', 'ação@b.pt']) {
+  for (const email of ['', 'sem-arroba.pt', 'a@b', 'a b@c.pt', 'a@@b.pt', 'a@b..pt', '.a@b.pt', 'a.@b.pt', 'a..b@c.pt', 'a@b.p', 'a@-b.pt', 'a@b.123', '<script>alert(1)</script>@b.pt', 'a,b@c.pt', 'ação@b.pt']) {
     test(`recusa o email "${email}"`, async () => {
       await assertFieldError(await post({ ...uniqueFields(), email }), 'email');
     });
   }
+
+  test("aceita um email com apóstrofo", async () => {
+    const contact = await createContact({ email: "o'connor@exemplo.pt" });
+    assert.equal(contact.email, "o'connor@exemplo.pt");
+  });
 
   test('recusa contacto sem fotografia', async () => {
     const response = await api(`${baseUrl}/contacts`, {

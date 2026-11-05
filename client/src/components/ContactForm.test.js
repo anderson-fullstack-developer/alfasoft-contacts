@@ -1,4 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils';
+import { nextTick } from 'vue';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { MAX_PICTURE_BYTES } from '../../../validation/contact.js';
 import ContactForm from './ContactForm.vue';
@@ -66,11 +67,87 @@ describe('ContactForm ao criar', () => {
     expect(errorOf(wrapper, 'name').exists()).toBe(false);
   });
 
-  test.each(['9999999999', 'Maria123', '!!!!!!!!'])('recusa o nome %s', async (name) => {
+  test.each([
+    ['9999999999', 'números'],
+    ['Anderson 11111', 'números'],
+    ['Maria_Silva', 'símbolos: _'],
+    ['!!!!!!!!', 'símbolos: !'],
+    ['------', 'começar por uma letra']
+  ])('o nome %s indica o motivo exato', async (name, expected) => {
     const wrapper = mountForm();
     await fillFields(wrapper, { ...VALID_FIELDS, name });
     await submit(wrapper);
-    expect(errorOf(wrapper, 'name').text()).toContain('só pode ter letras');
+    expect(errorOf(wrapper, 'name').text()).toContain(expected);
+  });
+
+  test('indica quantos dígitos e caracteres foram escritos', async () => {
+    const wrapper = mountForm();
+    await fillFields(wrapper, { ...VALID_FIELDS, name: 'Maria', contact: '12345678' });
+    await submit(wrapper);
+    expect(errorOf(wrapper, 'name').text()).toContain('(tem 5)');
+    expect(errorOf(wrapper, 'phone').text()).toContain('(tem 8)');
+  });
+
+  test('o erro desaparece enquanto o utilizador corrige, sem submeter', async () => {
+    const wrapper = mountForm();
+    await wrapper.find('#contact-name').setValue('Anderson 11111');
+    await wrapper.find('#contact-name').trigger('blur');
+    expect(errorOf(wrapper, 'name').text()).toContain('números');
+
+    await wrapper.find('#contact-name').setValue('Anderson Neto');
+    await nextTick();
+    expect(errorOf(wrapper, 'name').exists()).toBe(false);
+  });
+
+  test('não mostra erro antes de o utilizador sair do campo', async () => {
+    const wrapper = mountForm();
+    await wrapper.find('#contact-name').setValue('And');
+    await nextTick();
+    expect(errorOf(wrapper, 'name').exists()).toBe(false);
+  });
+
+  test('corrigir um campo não apaga o erro de outro', async () => {
+    const wrapper = mountForm();
+    await submit(wrapper);
+    await wrapper.find('#contact-name').setValue('Anderson Neto');
+    await nextTick();
+    expect(errorOf(wrapper, 'name').exists()).toBe(false);
+    expect(errorOf(wrapper, 'email').exists()).toBe(true);
+  });
+
+  test('o erro de duplicado da API desaparece ao alterar o campo', async () => {
+    const wrapper = mountForm();
+    await fillFields(wrapper, VALID_FIELDS);
+    await wrapper.setProps({ serverErrors: { contact: 'Já existe um contacto com este número.' } });
+    await flushPromises();
+    expect(errorOf(wrapper, 'phone').text()).toContain('Já existe');
+
+    await wrapper.find('#contact-phone').setValue('933333333');
+    await nextTick();
+    expect(errorOf(wrapper, 'phone').exists()).toBe(false);
+  });
+
+  test('o erro de duplicado mantém-se ao sair do campo sem o alterar', async () => {
+    const wrapper = mountForm();
+    await fillFields(wrapper, VALID_FIELDS);
+    await wrapper.setProps({ serverErrors: { contact: 'Já existe um contacto com este número.' } });
+    await flushPromises();
+
+    await wrapper.find('#contact-phone').trigger('blur');
+    expect(errorOf(wrapper, 'phone').text()).toContain('Já existe');
+  });
+
+  test('leva o cursor ao primeiro campo com erro', async () => {
+    const wrapper = mount(ContactForm, {
+      props: { submitLabel: 'Guardar' },
+      global: { stubs: { RouterLink: true } },
+      attachTo: document.body
+    });
+    await fillFields(wrapper, { ...VALID_FIELDS, contact: '123' });
+    await submit(wrapper);
+    await flushPromises();
+    expect(document.activeElement?.id).toBe('contact-phone');
+    wrapper.unmount();
   });
 
   test.each(['José António', "Sinead O'Connor", 'Ana-Rita Silva'])('aceita o nome %s', async (name) => {

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import {
   ACCEPTED_PICTURE_TYPES,
   PICTURE_MESSAGES,
@@ -17,6 +17,13 @@ const props = defineProps({
 
 const emit = defineEmits(['submit']);
 
+const FIELD_INPUT_IDS = {
+  name: 'contact-name',
+  contact: 'contact-phone',
+  email: 'contact-email',
+  picture: 'contact-picture'
+};
+
 const form = reactive({
   name: props.contact?.name ?? '',
   contact: props.contact?.contact ?? '',
@@ -29,8 +36,38 @@ const previewUrl = ref('');
 
 const displayedPicture = computed(() => previewUrl.value || props.contact?.picture || '');
 
+const touched = reactive({ name: false, contact: false, email: false });
+
+function validateField(field) {
+  const { [field]: _removed, ...otherErrors } = errors.value;
+  const { errors: fieldErrors } = validateContact(form);
+  errors.value = fieldErrors[field] ? { ...otherErrors, [field]: fieldErrors[field] } : otherErrors;
+}
+
+function markTouched(field) {
+  touched[field] = true;
+  // An existing message stays until the value changes: it may be a duplicate reported by the API.
+  if (!errors.value[field]) validateField(field);
+}
+
+// Before the first blur nothing is shown, so the user is not corrected while still typing.
+// After that, the message follows every change and disappears as soon as the value is valid.
+for (const field of Object.keys(touched)) {
+  watch(() => form[field], () => {
+    if (touched[field]) validateField(field);
+  });
+}
+
+async function focusFirstError() {
+  await nextTick();
+  const firstField = Object.keys(FIELD_INPUT_IDS).find((field) => errors.value[field]);
+  if (firstField) document.getElementById(FIELD_INPUT_IDS[firstField])?.focus();
+}
+
 watch(() => props.serverErrors, (serverErrors) => {
   errors.value = serverErrors;
+  Object.keys(touched).forEach((field) => { touched[field] = true; });
+  focusFirstError();
 });
 
 function clearPreview() {
@@ -72,7 +109,10 @@ function submit() {
   if (!pictureFile.value && !props.contact) fieldErrors.picture = PICTURE_MESSAGES.required;
 
   errors.value = fieldErrors;
+  Object.keys(touched).forEach((field) => { touched[field] = true; });
+
   if (Object.keys(fieldErrors).length === 0) emit('submit', buildFormData());
+  else focusFirstError();
 }
 
 onBeforeUnmount(clearPreview);
@@ -84,28 +124,33 @@ onBeforeUnmount(clearPreview);
       id="contact-name"
       v-model="form.name"
       label="Nome"
+      hint="Mais de 5 caracteres, só com letras, espaços, hífens, apóstrofos e pontos."
       autocomplete="name"
       maxlength="255"
       :error="errors.name"
+      @blur="markTouched('name')"
     />
     <TextField
       id="contact-phone"
       v-model="form.contact"
-      label="Contacto (9 dígitos)"
+      label="Contacto"
+      hint="Exatamente 9 dígitos, sem espaços."
       type="tel"
       inputmode="numeric"
       autocomplete="tel"
-      maxlength="9"
       :error="errors.contact"
+      @blur="markTouched('contact')"
     />
     <TextField
       id="contact-email"
       v-model="form.email"
       label="Email"
+      hint="Por exemplo, nome@dominio.pt."
       type="email"
       autocomplete="email"
       maxlength="254"
       :error="errors.email"
+      @blur="markTouched('email')"
     />
 
     <div class="field">

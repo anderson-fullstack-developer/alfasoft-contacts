@@ -3,7 +3,7 @@ import { mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const UPLOADS_DIR = fileURLToPath(new URL('./uploads/', import.meta.url));
+export const UPLOADS_DIR = process.env.UPLOADS_DIR ?? fileURLToPath(new URL('./uploads/', import.meta.url));
 export const UPLOADS_URL = '/uploads';
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);

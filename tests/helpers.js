@@ -1,3 +1,4 @@
+import { TEST_DATABASE } from './test-env.js';
 import app from '../app.js';
 import { hashPassword } from '../auth.js';
 import db from '../db.js';
@@ -5,7 +6,14 @@ import db from '../db.js';
 export const TEST_USERNAME = 'test-admin';
 export const TEST_PASSWORD = 'test-password';
 
+async function assertTestDatabase() {
+  const [[{ name }]] = await db.query('SELECT DATABASE() AS name');
+  if (name !== TEST_DATABASE) throw new Error(`Refusing to run tests against database "${name}".`);
+}
+
 export async function startTestServer() {
+  await assertTestDatabase();
+
   process.env.ADMIN_USERNAME = TEST_USERNAME;
   process.env.ADMIN_PASSWORD_HASH = await hashPassword(TEST_PASSWORD);
   process.env.SESSION_SECRET = 'test-session-secret';

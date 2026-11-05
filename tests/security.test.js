@@ -81,6 +81,15 @@ describe('limite de tentativas de login', () => {
     assert.equal((await postLogin(baseUrl, TEST_USERNAME, TEST_PASSWORD)).status, 429);
   });
 
+  test('durante o bloqueio, um X-Forwarded-For forjado não dá um contador novo', async () => {
+    const response = await fetch(`${baseUrl}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': '203.0.113.9' },
+      body: JSON.stringify({ username: TEST_USERNAME, password: 'errada' })
+    });
+    assert.equal(response.status, 429);
+  });
+
   test('a sessão já iniciada continua a funcionar', async () => {
     const response = await fetch(`${baseUrl}/contacts/999999999`, { headers: { cookie } });
     assert.equal(response.status, 404);

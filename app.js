@@ -20,8 +20,6 @@ const SECURITY_HEADERS = {
 };
 
 app.disable('x-powered-by');
-// nginx runs on this machine, so only a local proxy may set the client address.
-app.set('trust proxy', 'loopback');
 app.use((req, res, next) => {
   res.set(SECURITY_HEADERS);
   next();

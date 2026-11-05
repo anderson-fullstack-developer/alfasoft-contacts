@@ -11,7 +11,7 @@ Aplicação web de gestão de contactos, desenvolvida para o exercício técnico
 - Validação no servidor e no formulário, com as mesmas regras:
   - nome com mais de 5 caracteres, só com letras, espaços, hífens, apóstrofos e pontos;
   - contacto com exatamente 9 dígitos;
-  - email válido;
+  - email válido, com letras, dígitos e `._%+-` antes do `@`;
   - fotografia obrigatória ao criar (JPEG, PNG ou WebP, até 5 MB);
   - contacto e email únicos.
 - Autenticação: sem sessão, só a lista está acessível.
@@ -96,6 +96,8 @@ Os campos de contacto são `name`, `contact`, `email` e `picture`. Ao editar, a 
 - **Fotografias:** o ficheiro é validado em memória, o tipo é lido dos primeiros bytes e o nome é gerado no servidor. Se a gravação na base de dados falhar, o ficheiro novo é removido.
 - **Validação partilhada:** o formulário usa as regras da API para dar resposta imediata, mas a API é sempre quem decide.
 - **Sessão sem estado:** um token assinado com HMAC fica num cookie `HttpOnly`, `Secure` e `SameSite=Lax`, e a password é guardada com `scrypt`. Basta um utilizador, por isso as credenciais ficam em variáveis de ambiente.
+- **Cabeçalhos de segurança:** todas as respostas incluem `X-Content-Type-Options`, `X-Frame-Options` e `Content-Security-Policy`.
+- **Fotografias em pedidos simultâneos:** a edição e a eliminação usam uma transação, para nenhum ficheiro ficar órfão.
 - **Funcionalidades nativas:** o modal usa o elemento `<dialog>` e os testes da API usam `node:test`. O `multer` serve apenas para ler o envio do ficheiro.
 
 ## Testes

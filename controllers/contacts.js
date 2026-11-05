@@ -104,25 +104,29 @@ router.put('/:id', receivePicture, asyncHandler(async (req, res) => {
   if (hasErrors(errors)) return res.status(400).json({ errors });
 
   const newPicture = req.file ? await savePicture(req.file.buffer, extension) : null;
-  const picture = newPicture ?? current.picture;
 
+  let updated;
   try {
-    await updateContact(current.id, { ...values, picture });
+    updated = await updateContact(current.id, { ...values, newPicture });
   } catch (err) {
     if (newPicture) await removePicture(newPicture);
     return sendDuplicateOrRethrow(err, res);
   }
 
-  if (newPicture) await removePicture(current.picture);
-  res.json(toResponse({ id: current.id, ...values, picture }));
+  if (!updated) {
+    if (newPicture) await removePicture(newPicture);
+    return sendNotFound(res);
+  }
+
+  if (newPicture) await removePicture(updated.previousPicture);
+  res.json(toResponse({ id: current.id, ...values, picture: updated.picture }));
 }));
 
 router.delete('/:id', asyncHandler(async (req, res) => {
-  const current = await findContact(req.params.id);
-  if (!current) return sendNotFound(res);
+  const picture = VALID_ID.test(req.params.id) ? await deleteContact(req.params.id) : null;
+  if (!picture) return sendNotFound(res);
 
-  await deleteContact(current.id);
-  await removePicture(current.picture);
+  await removePicture(picture);
   res.status(204).end();
 }));
 

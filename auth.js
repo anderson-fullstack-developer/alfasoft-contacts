@@ -52,8 +52,12 @@ function readSessionToken(token) {
   const received = Buffer.from(signature);
   if (expected.length !== received.length || !timingSafeEqual(expected, received)) return null;
 
-  const { username, expiresAt } = JSON.parse(Buffer.from(payload, 'base64url').toString());
-  return expiresAt > Date.now() ? username : null;
+  try {
+    const { username, expiresAt } = JSON.parse(Buffer.from(payload, 'base64url').toString());
+    return expiresAt > Date.now() ? username : null;
+  } catch {
+    return null;
+  }
 }
 
 function readCookie(req, name) {

@@ -5,7 +5,7 @@
 const NAME_PATTERN = /^\p{L}[\p{L}\p{M}]*(?:[ '’.-]+\p{L}[\p{L}\p{M}]*)*\.?$/u;
 const NAME_ALLOWED_CHARACTER = /[\p{L}\p{M} '’.-]/u;
 const PHONE_PATTERN = /^\d{9}$/;
-const EMAIL_PATTERN = /^[^\s@.]+(?:\.[^\s@.]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/;
+const EMAIL_PATTERN = /^[a-z0-9_%+-]+(?:\.[a-z0-9_%+-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/;
 
 const MAX_NAME_LENGTH = 255;
 const MAX_EMAIL_LENGTH = 254;

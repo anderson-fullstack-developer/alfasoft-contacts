@@ -105,7 +105,7 @@ describe('validação ao criar', () => {
     });
   }
 
-  for (const email of ['', 'sem-arroba.pt', 'a@b', 'a b@c.pt', 'a@@b.pt', 'a@b..pt', '.a@b.pt', 'a.@b.pt', 'a..b@c.pt', 'a@b.p', 'a@-b.pt', 'a@b.123']) {
+  for (const email of ['', 'sem-arroba.pt', 'a@b', 'a b@c.pt', 'a@@b.pt', 'a@b..pt', '.a@b.pt', 'a.@b.pt', 'a..b@c.pt', 'a@b.p', 'a@-b.pt', 'a@b.123', '<script>alert(1)</script>@b.pt', "a'--@b.pt", 'a,b@c.pt', 'ação@b.pt']) {
     test(`recusa o email "${email}"`, async () => {
       await assertFieldError(await post({ ...uniqueFields(), email }), 'email');
     });
@@ -154,6 +154,73 @@ describe('validação ao criar', () => {
     const existing = await createContact();
     const email = existing.email.toUpperCase();
     await assertFieldError(await post({ ...uniqueFields(), email }), 'email', 409);
+  });
+});
+
+describe('pedidos anormais', () => {
+  test('um corpo acima do limite devolve 413', async () => {
+    const response = await api(`${baseUrl}/contacts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'a'.repeat(200000) })
+    });
+    assert.equal(response.status, 413);
+  });
+
+  test('JSON malformado devolve 400', async () => {
+    const response = await api(`${baseUrl}/contacts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{"name":'
+    });
+    assert.equal(response.status, 400);
+  });
+
+  test('um endereço mal codificado devolve 400', async () => {
+    assert.equal((await api(`${baseUrl}/contacts/%E0%A4%A`)).status, 400);
+  });
+
+  test('não permite ler ficheiros fora de uploads', async () => {
+    for (const path of ['/.env', '/uploads/..%2f.env', '/uploads/%2e%2e/.env', '/db.js', '/package.json']) {
+      assert.equal((await fetch(baseUrl + path)).status, 404, path);
+    }
+  });
+
+  test('as respostas trazem os cabeçalhos de segurança', async () => {
+    const { headers } = await fetch(`${baseUrl}/contacts`);
+    assert.equal(headers.get('x-content-type-options'), 'nosniff');
+    assert.equal(headers.get('x-frame-options'), 'DENY');
+    assert.ok(headers.get('content-security-policy'));
+    assert.equal(headers.get('x-powered-by'), null);
+  });
+});
+
+describe('pedidos em simultâneo', () => {
+  test('o mesmo número só é criado uma vez', async () => {
+    const { contact } = uniqueFields();
+    const responses = await Promise.all(
+      Array.from({ length: 10 }, () => post({ ...uniqueFields(), contact }))
+    );
+    const statuses = responses.map((response) => response.status).sort();
+    for (const response of responses) {
+      if (response.status === 201) createdIds.add((await response.json()).id);
+    }
+    assert.deepEqual(statuses, [201, ...Array(9).fill(409)]);
+  });
+
+  test('edições em simultâneo não deixam fotografias órfãs', async () => {
+    const { id, name, contact, email } = await createContact();
+    const responses = await Promise.all(
+      Array.from({ length: 5 }, () => put(id, { name, contact, email }, validPicture))
+    );
+    assert.ok(responses.every((response) => response.status === 200));
+
+    const pictures = await Promise.all(responses.map((response) => response.json()));
+    const current = (await (await api(`${baseUrl}/contacts/${id}`)).json()).picture;
+    for (const { picture } of pictures) {
+      const expected = picture === current ? 200 : 404;
+      assert.equal((await fetch(baseUrl + picture)).status, expected);
+    }
   });
 });
 

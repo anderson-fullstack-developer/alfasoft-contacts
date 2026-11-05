@@ -1,0 +1,116 @@
+# Manual API requests for the VS Code REST Client extension (humao.rest-client).
+# Start the server with `npm start`, then click "Send Request" above each request.
+# Run "login" before the protected requests. Requests that create data use the
+# database configured in .env, so finish with "Delete the contact".
+
+@baseUrl = http://localhost:3000
+@session = {{login.response.headers.Set-Cookie}}
+@contactId = {{create.response.body.id}}
+
+### List contacts (public)
+GET {{baseUrl}}/contacts
+
+### Protected route without a session: expect 401
+GET {{baseUrl}}/contacts/1
+
+### Login
+# @name login
+# @prompt username
+# @prompt password
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{username}}",
+  "password": "{{password}}"
+}
+
+### Current session
+GET {{baseUrl}}/auth/me
+Cookie: {{session}}
+
+### Create a contact: expect 201
+# @name create
+POST {{baseUrl}}/contacts
+Cookie: {{session}}
+Content-Type: multipart/form-data; boundary=ContactBoundary
+
+--ContactBoundary
+Content-Disposition: form-data; name="name"
+
+Contacto de Exemplo
+--ContactBoundary
+Content-Disposition: form-data; name="contact"
+
+970000001
+--ContactBoundary
+Content-Disposition: form-data; name="email"
+
+contacto.exemplo@exemplo.pt
+--ContactBoundary
+Content-Disposition: form-data; name="picture"; filename="sample.png"
+Content-Type: image/png
+
+< ./tests/fixtures/sample.png
+--ContactBoundary--
+
+### Create the same contact again: expect 409
+POST {{baseUrl}}/contacts
+Cookie: {{session}}
+Content-Type: multipart/form-data; boundary=ContactBoundary
+
+--ContactBoundary
+Content-Disposition: form-data; name="name"
+
+Contacto de Exemplo
+--ContactBoundary
+Content-Disposition: form-data; name="contact"
+
+970000001
+--ContactBoundary
+Content-Disposition: form-data; name="email"
+
+outro.exemplo@exemplo.pt
+--ContactBoundary
+Content-Disposition: form-data; name="picture"; filename="sample.png"
+Content-Type: image/png
+
+< ./tests/fixtures/sample.png
+--ContactBoundary--
+
+### Invalid fields, without a picture: expect 400 with an error per field
+POST {{baseUrl}}/contacts
+Cookie: {{session}}
+Content-Type: application/json
+
+{
+  "name": "Ana",
+  "contact": "123",
+  "email": "invalido"
+}
+
+### View the contact
+GET {{baseUrl}}/contacts/{{contactId}}
+Cookie: {{session}}
+
+### Edit the contact and keep its picture: expect 200
+PUT {{baseUrl}}/contacts/{{contactId}}
+Cookie: {{session}}
+Content-Type: application/json
+
+{
+  "name": "Contacto Editado",
+  "contact": "970000001",
+  "email": "contacto.exemplo@exemplo.pt"
+}
+
+### Delete the contact: expect 204
+DELETE {{baseUrl}}/contacts/{{contactId}}
+Cookie: {{session}}
+
+### Contact that does not exist: expect 404
+GET {{baseUrl}}/contacts/999999999
+Cookie: {{session}}
+
+### Logout
+POST {{baseUrl}}/auth/logout

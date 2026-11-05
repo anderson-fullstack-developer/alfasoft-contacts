@@ -89,6 +89,8 @@ As respostas são em JSON. Os erros de validação seguem o formato `{ "errors":
 
 Os campos de contacto são `name`, `contact`, `email` e `picture`. Ao editar, a fotografia atual mantém-se se não for enviada outra.
 
+Para experimentar a API manualmente, o ficheiro `requests.http` tem os pedidos prontos para a extensão REST Client do VS Code.
+
 ## Decisões técnicas
 
 - **Unicidade na base de dados:** as chaves `UNIQUE` garantem a regra mesmo com pedidos simultâneos, e o erro de duplicação é devolvido como 409.

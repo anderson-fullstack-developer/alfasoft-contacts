@@ -38,10 +38,16 @@ const displayedPicture = computed(() => previewUrl.value || props.contact?.pictu
 
 const touched = reactive({ name: false, contact: false, email: false });
 
+function setFieldError(field, message) {
+  const updatedErrors = { ...errors.value };
+  if (message) updatedErrors[field] = message;
+  else delete updatedErrors[field];
+  errors.value = updatedErrors;
+}
+
 function validateField(field) {
-  const { [field]: _removed, ...otherErrors } = errors.value;
   const { errors: fieldErrors } = validateContact(form);
-  errors.value = fieldErrors[field] ? { ...otherErrors, [field]: fieldErrors[field] } : otherErrors;
+  setFieldError(field, fieldErrors[field]);
 }
 
 function markTouched(field) {
@@ -83,14 +89,12 @@ function selectPicture(event) {
   if (!file) return;
 
   const pictureError = validatePictureFile(file);
+  setFieldError('picture', pictureError);
   if (pictureError) {
-    errors.value = { ...errors.value, picture: pictureError };
     event.target.value = '';
     return;
   }
 
-  const { picture, ...otherErrors } = errors.value;
-  errors.value = otherErrors;
   pictureFile.value = file;
   previewUrl.value = URL.createObjectURL(file);
 }

@@ -1,17 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import { VUE_PATHS } from '../../vue-routes.js';
 import { useAuth } from './composables/useAuth.js';
 import ContactDetailsPage from './pages/ContactDetailsPage.vue';
 import ContactFormPage from './pages/ContactFormPage.vue';
 import ContactListPage from './pages/ContactListPage.vue';
 import LoginPage from './pages/LoginPage.vue';
 
-// Paths must match VUE_ROUTES in app.js and must not start with /contacts or /auth, which belong to the API.
 const routes = [
-  { path: '/', name: 'contacts', component: ContactListPage },
-  { path: '/login', name: 'login', component: LoginPage },
-  { path: '/novo', name: 'new-contact', component: ContactFormPage, meta: { requiresAuth: true } },
-  { path: '/ver/:id', name: 'contact-details', component: ContactDetailsPage, meta: { requiresAuth: true } },
-  { path: '/editar/:id', name: 'edit-contact', component: ContactFormPage, meta: { requiresAuth: true } },
+  { path: VUE_PATHS.contacts, name: 'contacts', component: ContactListPage },
+  { path: VUE_PATHS.login, name: 'login', component: LoginPage },
+  { path: VUE_PATHS.newContact, name: 'new-contact', component: ContactFormPage, meta: { requiresAuth: true } },
+  { path: VUE_PATHS.contactDetails, name: 'contact-details', component: ContactDetailsPage, meta: { requiresAuth: true } },
+  { path: VUE_PATHS.editContact, name: 'edit-contact', component: ContactFormPage, meta: { requiresAuth: true } },
   { path: '/:pathMatch(.*)*', redirect: { name: 'contacts' } }
 ];
 

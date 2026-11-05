@@ -21,7 +21,8 @@ Aplicação web de gestão de contactos, desenvolvida para o exercício técnico
 
 ```text
 index.js            Arranque do servidor
-app.js              Configuração do Express e rotas do Vue
+app.js              Configuração do Express
+vue-routes.js       Caminhos do Vue, partilhados pelo Express e pelo router
 db.js               Pool de ligações à MariaDB
 auth.js             Password, sessão e proteção de rotas
 pictures.js         Deteção do tipo, gravação e remoção de fotografias

@@ -4,11 +4,9 @@ import { rejectCrossSiteWrites } from './auth.js';
 import authRouter from './controllers/auth.js';
 import contactsRouter from './controllers/contacts.js';
 import { UPLOADS_DIR, UPLOADS_URL } from './pictures.js';
+import { VUE_PATHS } from './vue-routes.js';
 
 const PUBLIC_DIR = fileURLToPath(new URL('./public/', import.meta.url));
-
-// Explicit list, so the Vue fallback never captures /contacts, /uploads or /cloudcmd.
-const VUE_ROUTES = ['/', '/login', '/novo', '/ver/:id', '/editar/:id'];
 
 const app = express();
 
@@ -34,7 +32,8 @@ app.use('/contacts', contactsRouter);
 app.use(UPLOADS_URL, express.static(UPLOADS_DIR));
 app.use(express.static(PUBLIC_DIR, { index: false }));
 
-app.get(VUE_ROUTES, (req, res, next) => {
+// Explicit list, so the Vue fallback never captures /contacts, /uploads or /cloudcmd.
+app.get(Object.values(VUE_PATHS), (req, res, next) => {
   res.sendFile('index.html', { root: PUBLIC_DIR }, (err) => {
     if (err) next();
   });

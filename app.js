@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import express from 'express';
+import { rejectCrossSiteWrites } from './auth.js';
 import authRouter from './controllers/auth.js';
 import contactsRouter from './controllers/contacts.js';
 import { UPLOADS_DIR, UPLOADS_URL } from './pictures.js';
@@ -19,11 +20,14 @@ const SECURITY_HEADERS = {
 };
 
 app.disable('x-powered-by');
+// nginx runs on this machine, so only a local proxy may set the client address.
+app.set('trust proxy', 'loopback');
 app.use((req, res, next) => {
   res.set(SECURITY_HEADERS);
   next();
 });
 app.use(express.json());
+app.use(rejectCrossSiteWrites);
 
 app.use('/auth', authRouter);
 app.use('/contacts', contactsRouter);

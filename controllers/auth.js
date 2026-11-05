@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { rateLimit } from 'express-rate-limit';
 import { asyncHandler } from '../async-handler.js';
 import {
   SESSION_COOKIE,
@@ -8,12 +9,28 @@ import {
   getSessionUsername
 } from '../auth.js';
 
-// SameSite=Lax stops other sites from sending this cookie on POST, PUT and DELETE requests.
+// SameSite=Lax blocks unrelated sites; rejectCrossSiteWrites also covers neighbouring subdomains.
 const COOKIE_OPTIONS = { httpOnly: true, secure: true, sameSite: 'lax', path: '/' };
+
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const MAX_FAILED_LOGINS = 10;
+
+// Each attempt runs scrypt, which is deliberately expensive, so this also limits CPU abuse.
+const limitFailedLogins = rateLimit({
+  windowMs: LOGIN_WINDOW_MS,
+  limit: MAX_FAILED_LOGINS,
+  skipSuccessfulRequests: true,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  handler(req, res) {
+    console.warn(`Login rate limit reached for ${req.ip}`);
+    res.status(429).json({ message: 'Demasiadas tentativas falhadas. Tenta novamente daqui a 15 minutos.' });
+  }
+});
 
 const router = Router();
 
-router.post('/login', asyncHandler(async (req, res) => {
+router.post('/login', limitFailedLogins, asyncHandler(async (req, res) => {
   const { username, password } = req.body ?? {};
 
   if (!(await checkCredentials(username, password))) {

@@ -72,6 +72,24 @@ export function getSessionUsername(req) {
   return token ? readSessionToken(token) : null;
 }
 
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+function isSameOriginRequest(req) {
+  const fetchSite = req.get('sec-fetch-site');
+  if (fetchSite) return fetchSite === 'same-origin' || fetchSite === 'none';
+
+  const origin = req.get('origin');
+  if (!origin) return true; // Clients other than browsers send neither header.
+  return URL.canParse(origin) && new URL(origin).host === req.get('host');
+}
+
+// SameSite=Lax is not enough here: every *.recruitment.alfasoft.pt application counts as
+// the same site, so requests from those neighbours would still carry the session cookie.
+export function rejectCrossSiteWrites(req, res, next) {
+  if (SAFE_METHODS.has(req.method) || isSameOriginRequest(req)) return next();
+  res.status(403).json({ message: 'Pedido recusado.' });
+}
+
 export function requireAuth(req, res, next) {
   if (getSessionUsername(req)) return next();
   res.status(401).json({ message: 'Inicia sessão para continuar.' });

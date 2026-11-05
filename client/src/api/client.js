@@ -6,6 +6,13 @@ export class ApiError extends Error {
   }
 }
 
+let onUnauthorized = () => {};
+
+// Lets the router react to an expired session without this layer depending on it.
+export function setUnauthorizedHandler(handler) {
+  onUnauthorized = handler;
+}
+
 export async function request(path, options) {
   let response;
   try {
@@ -18,6 +25,7 @@ export async function request(path, options) {
 
   const body = await response.json().catch(() => null);
   if (response.ok) return body;
+  if (response.status === 401) onUnauthorized();
 
   throw new ApiError(body?.message ?? 'Ocorreu um erro. Tenta novamente.', {
     status: response.status,

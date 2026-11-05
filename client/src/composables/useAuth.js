@@ -24,11 +24,15 @@ async function login(name, password) {
   username.value = session.username;
 }
 
-async function logout() {
-  await postLogout();
+function clearSession() {
   username.value = null;
 }
 
+async function logout() {
+  await postLogout();
+  clearSession();
+}
+
 export function useAuth() {
-  return { username, isAuthenticated, ensureSession, login, logout };
+  return { username, isAuthenticated, ensureSession, login, logout, clearSession };
 }

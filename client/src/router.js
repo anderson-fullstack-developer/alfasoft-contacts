@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { VUE_PATHS } from '../../vue-routes.js';
+import { setUnauthorizedHandler } from './api/client.js';
 import { useAuth } from './composables/useAuth.js';
+import { useNotification } from './composables/useNotification.js';
 import ContactDetailsPage from './pages/ContactDetailsPage.vue';
 import ContactFormPage from './pages/ContactFormPage.vue';
 import ContactListPage from './pages/ContactListPage.vue';
@@ -32,6 +34,17 @@ router.beforeEach(async (to) => {
   if (to.name === 'login' && isAuthenticated.value) {
     return { name: 'contacts' };
   }
+});
+
+// A signed-in user who receives a 401 has an expired session. A failed login is not
+// affected, because nobody is signed in at that point.
+setUnauthorizedHandler(() => {
+  const { clearSession, isAuthenticated } = useAuth();
+  if (!isAuthenticated.value) return;
+
+  clearSession();
+  useNotification().notify('A sessão expirou. Inicia sessão novamente.');
+  router.push({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } });
 });
 
 export default router;

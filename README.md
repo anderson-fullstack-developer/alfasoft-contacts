@@ -124,7 +124,7 @@ npm run test:db:down
 
 - Se o contacto e o email estiverem ambos duplicados, a API indica um de cada vez.
 - O limite de login fica em memória: reinicia com o servidor e não é partilhado entre processos.
-- Atrás do nginx, o limite de login é comum a todos os visitantes, porque o proxy não envia um IP de confiança. Dez tentativas falhadas bloqueiam o login durante 15 minutos.
+- Atrás do nginx, o limite de login é comum a todos os visitantes, porque o proxy não envia um IP de confiança. O bloqueio dura 15 minutos e começa ao fim de 10 tentativas falhadas por endereço local do proxy, o que pode dar cerca de 20 no total se ele alternar entre IPv4 e IPv6.
 - Um cookie continua válido até expirar, mesmo depois do logout, porque a sessão não fica guardada no servidor.
 - A fotografia é verificada pelos primeiros bytes, por isso um ficheiro corrompido com um início válido é aceite.
 - Existe apenas um utilizador, sem registo de contas.

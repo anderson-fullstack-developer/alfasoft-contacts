@@ -1,11 +1,13 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { deleteContact, listContacts } from '../api/contacts.js';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import ContactCard from '../components/ContactCard.vue';
 import StatusMessage from '../components/StatusMessage.vue';
+import TextField from '../components/TextField.vue';
 import { useAuth } from '../composables/useAuth.js';
 import { useNotification } from '../composables/useNotification.js';
+import { filterContacts } from '../contactSearch.js';
 
 const { isAuthenticated } = useAuth();
 const { notify } = useNotification();
@@ -13,6 +15,15 @@ const { notify } = useNotification();
 const contacts = ref([]);
 const loading = ref(true);
 const loadError = ref('');
+const searchQuery = ref('');
+
+const visibleContacts = computed(() => filterContacts(contacts.value, searchQuery.value));
+
+const countLabel = computed(() => {
+  const total = contacts.value.length;
+  const noun = total === 1 ? 'contacto' : 'contactos';
+  return searchQuery.value.trim() ? `${visibleContacts.value.length} de ${total} ${noun}` : `${total} ${noun}`;
+});
 
 const contactToDelete = ref(null);
 const dialogOpen = ref(false);
@@ -61,7 +72,16 @@ onMounted(loadContacts);
 </script>
 
 <template>
-  <h1 class="page-title">Lista de contactos</h1>
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Lista de contactos</h1>
+      <output v-if="!loading && !loadError" class="page-count">{{ countLabel }}</output>
+    </div>
+    <RouterLink v-if="isAuthenticated" :to="{ name: 'new-contact' }" class="button button--primary">
+      Novo contacto
+    </RouterLink>
+  </header>
+
   <p v-if="!isAuthenticated" class="page-intro">
     <RouterLink :to="{ name: 'login' }">Inicia sessão</RouterLink> para ver detalhes, criar, editar ou eliminar contactos.
   </p>
@@ -78,15 +98,31 @@ onMounted(loadContacts);
     </RouterLink>
   </StatusMessage>
 
-  <div v-else class="card-grid">
-    <ContactCard
-      v-for="contact in contacts"
-      :key="contact.id"
-      :contact="contact"
-      :can-manage="isAuthenticated"
-      @delete="askToDelete"
-    />
-  </div>
+  <template v-else>
+    <div class="list-search">
+      <TextField
+        id="contact-search"
+        v-model="searchQuery"
+        label="Pesquisar"
+        type="search"
+        placeholder="Nome, telefone ou email"
+      />
+    </div>
+
+    <StatusMessage v-if="visibleContacts.length === 0" title="Nenhum contacto corresponde à pesquisa.">
+      <button type="button" class="button" @click="searchQuery = ''">Limpar pesquisa</button>
+    </StatusMessage>
+
+    <div v-else class="card-grid">
+      <ContactCard
+        v-for="contact in visibleContacts"
+        :key="contact.id"
+        :contact="contact"
+        :can-manage="isAuthenticated"
+        @delete="askToDelete"
+      />
+    </div>
+  </template>
 
   <ConfirmDialog
     :open="dialogOpen"

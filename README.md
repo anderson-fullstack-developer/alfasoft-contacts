@@ -5,6 +5,7 @@ Aplicação web de gestão de contactos, desenvolvida para o exercício técnico
 ## Funcionalidades
 
 - Lista pública de contactos em cartões, com todos os dados e a fotografia.
+- Pesquisa local por nome, telefone e email.
 - Página de detalhes de um contacto.
 - Criação e edição com o mesmo formulário.
 - Eliminação com modal de confirmação.

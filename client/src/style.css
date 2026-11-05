@@ -8,7 +8,11 @@
   --color-primary-hover: #1e40af;
   --color-danger: #b91c1c;
   --color-danger-soft: #fdecec;
-  --radius: 10px;
+  --radius: 12px;
+  --radius-control: 8px;
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 6%);
+  --shadow-raised: 0 6px 18px rgb(15 23 42 / 10%);
+  --transition: 150ms ease;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: var(--color-text);
   background: var(--color-bg);
@@ -67,7 +71,35 @@ a {
 .page-title {
   margin: 0 0 20px;
   font-size: 1.5rem;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
   overflow-wrap: anywhere;
+}
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-bottom: 20px;
+}
+
+.page-header .page-title {
+  margin: 0;
+}
+
+.page-count {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.875rem;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.list-search {
+  max-width: 420px;
+  margin-bottom: 20px;
 }
 
 .button {
@@ -77,22 +109,30 @@ a {
   min-height: 40px;
   padding: 8px 14px;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
+  font-size: 0.9375rem;
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
+  transition: background-color var(--transition), border-color var(--transition), box-shadow var(--transition);
 }
 
 .button:hover {
+  border-color: var(--color-muted);
   background: var(--color-bg);
 }
 
+.button:active {
+  box-shadow: inset 0 1px 2px rgb(15 23 42 / 18%);
+}
+
 .button:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .button--primary {
@@ -102,6 +142,7 @@ a {
 }
 
 .button--primary:hover {
+  border-color: var(--color-primary-hover);
   background: var(--color-primary-hover);
 }
 
@@ -112,6 +153,7 @@ a {
 }
 
 .button--danger:hover {
+  border-color: var(--color-danger);
   background: var(--color-danger-soft);
 }
 
@@ -122,6 +164,7 @@ a {
 }
 
 .button--danger-solid:hover {
+  border-color: #991b1b;
   background: #991b1b;
 }
 
@@ -140,36 +183,59 @@ a {
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
 }
 
 .card {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  gap: 14px;
+  padding: 16px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--transition), border-color var(--transition);
+}
+
+.card:hover {
+  border-color: #c3cbd6;
+  box-shadow: var(--shadow-raised);
+}
+
+.card__header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
 }
 
 .card__picture {
-  display: block;
-  width: 100%;
-  aspect-ratio: 4 / 3;
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
   object-fit: cover;
   background: var(--color-border);
 }
 
-.card__body {
-  flex: 1;
-  padding: 16px;
+.card__identity {
+  min-width: 0;
 }
 
 .card__name {
-  margin: 0 0 12px;
-  font-size: 1.125rem;
+  margin: 0;
+  font-size: 1.0625rem;
+  line-height: 1.3;
   overflow-wrap: anywhere;
+}
+
+.card__id {
+  margin: 2px 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .card__fields {
@@ -188,25 +254,43 @@ a {
   overflow-wrap: anywhere;
 }
 
-.card__actions {
-  display: flex;
-  flex-wrap: wrap;
+.card__fields--inline {
+  flex: 1;
+  align-content: start;
+  font-size: 0.9375rem;
+}
+
+.card__fields--inline div {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  align-items: baseline;
   gap: 8px;
-  padding: 0 16px 16px;
+}
+
+.card__actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border);
 }
 
 .card__actions .button {
-  flex: 1;
+  min-height: 38px;
+  padding-inline: 6px;
+  font-size: 0.875rem;
 }
 
 .details {
   display: grid;
-  grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+  grid-template-columns: 200px minmax(0, 1fr);
   gap: 24px;
+  max-width: 760px;
   padding: 24px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
 .details__picture {
@@ -214,7 +298,7 @@ a {
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--color-border);
 }
 
@@ -226,15 +310,16 @@ a {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
 .form__preview {
   display: block;
-  width: 140px;
-  height: 140px;
+  width: 96px;
+  height: 96px;
   margin-bottom: 8px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 50%;
   background: var(--color-border);
 }
 
@@ -260,13 +345,19 @@ a {
   min-height: 42px;
   padding: 8px 12px;
   border: 1px solid var(--color-muted);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--color-surface);
   color: inherit;
   font: inherit;
+  transition: border-color var(--transition);
 }
 
-.field__input[aria-invalid='true'] {
+.field__input:hover {
+  border-color: var(--color-text);
+}
+
+.field__input[aria-invalid='true'],
+.field__input[aria-invalid='true']:hover {
   border-color: var(--color-danger);
 }
 
@@ -332,6 +423,12 @@ a {
   .spinner {
     animation-duration: 3s;
   }
+
+  .button,
+  .card,
+  .field__input {
+    transition: none;
+  }
 }
 
 .dialog {
@@ -376,8 +473,9 @@ a {
 .notification {
   margin: 0;
   padding: 10px 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--color-text);
+  box-shadow: var(--shadow-raised);
   color: #ffffff;
   font-weight: 600;
   overflow-wrap: anywhere;
@@ -391,5 +489,13 @@ a {
 
   .form {
     padding: 16px;
+  }
+
+  .details__picture {
+    max-width: 200px;
+  }
+
+  .list-search {
+    max-width: none;
   }
 }

@@ -115,6 +115,29 @@ a {
   background: var(--color-danger-soft);
 }
 
+.button--danger-solid {
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: #ffffff;
+}
+
+.button--danger-solid:hover {
+  background: #991b1b;
+}
+
+.app-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.page-intro {
+  max-width: 560px;
+  margin: -8px 0 20px;
+  color: var(--color-muted);
+}
+
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

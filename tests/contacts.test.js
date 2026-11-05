@@ -1,15 +1,18 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
-import app from '../app.js';
-import db from '../db.js';
+import { loginCookie, startTestServer } from './helpers.js';
 
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0]);
 
 let server;
 let baseUrl;
+let sessionCookie;
 const createdIds = new Set();
 let sequence = 0;
+
+const api = (url, options = {}) =>
+  fetch(url, { ...options, headers: { ...options.headers, cookie: sessionCookie } });
 
 function uniqueFields() {
   sequence += 1;
@@ -31,10 +34,10 @@ function buildForm(fields, picture) {
 const validPicture = { bytes: PNG, type: 'image/png', name: 'foto.png' };
 
 const post = (fields, picture = validPicture) =>
-  fetch(`${baseUrl}/contacts`, { method: 'POST', body: buildForm(fields, picture) });
+  api(`${baseUrl}/contacts`, { method: 'POST', body: buildForm(fields, picture) });
 
 const put = (id, fields, picture) =>
-  fetch(`${baseUrl}/contacts/${id}`, { method: 'PUT', body: buildForm(fields, picture) });
+  api(`${baseUrl}/contacts/${id}`, { method: 'PUT', body: buildForm(fields, picture) });
 
 async function createContact(overrides = {}) {
   const fields = { ...uniqueFields(), ...overrides };
@@ -52,18 +55,16 @@ async function assertFieldError(response, field, status = 400) {
 }
 
 before(async () => {
-  await new Promise((resolve) => {
-    server = app.listen(0, resolve);
-  });
-  baseUrl = `http://127.0.0.1:${server.address().port}`;
+  server = await startTestServer();
+  baseUrl = server.baseUrl;
+  sessionCookie = await loginCookie(baseUrl);
 });
 
 after(async () => {
   for (const id of createdIds) {
-    await fetch(`${baseUrl}/contacts/${id}`, { method: 'DELETE' });
+    await api(`${baseUrl}/contacts/${id}`, { method: 'DELETE' });
   }
-  await new Promise((resolve) => server.close(resolve));
-  await db.end();
+  await server.stop();
 });
 
 describe('validação ao criar', () => {
@@ -93,7 +94,7 @@ describe('validação ao criar', () => {
   }
 
   test('recusa contacto sem fotografia', async () => {
-    const response = await fetch(`${baseUrl}/contacts`, {
+    const response = await api(`${baseUrl}/contacts`, {
       method: 'POST',
       body: buildForm(uniqueFields())
     });
@@ -111,7 +112,7 @@ describe('validação ao criar', () => {
   });
 
   test('recusa envio multipart malformado', async () => {
-    const response = await fetch(`${baseUrl}/contacts`, {
+    const response = await api(`${baseUrl}/contacts`, {
       method: 'POST',
       headers: { 'Content-Type': 'multipart/form-data; boundary=limite' },
       body: '--limite\r\nConteudo sem cabecalhos validos'
@@ -120,7 +121,7 @@ describe('validação ao criar', () => {
   });
 
   test('indica todos os campos inválidos na mesma resposta', async () => {
-    const response = await fetch(`${baseUrl}/contacts`, { method: 'POST', body: new FormData() });
+    const response = await api(`${baseUrl}/contacts`, { method: 'POST', body: new FormData() });
     assert.equal(response.status, 400);
     const { errors } = await response.json();
     assert.deepEqual(Object.keys(errors).sort(), ['contact', 'email', 'name', 'picture']);
@@ -141,7 +142,7 @@ describe('validação ao criar', () => {
 describe('leitura', () => {
   test('GET /contacts inclui o contacto criado', async () => {
     const contact = await createContact();
-    const response = await fetch(`${baseUrl}/contacts`);
+    const response = await api(`${baseUrl}/contacts`);
     assert.equal(response.status, 200);
     const list = await response.json();
     assert.ok(list.some((item) => item.id === contact.id));
@@ -149,7 +150,7 @@ describe('leitura', () => {
 
   test('GET /contacts/:id devolve todos os campos e a fotografia abre', async () => {
     const contact = await createContact();
-    const response = await fetch(`${baseUrl}/contacts/${contact.id}`);
+    const response = await api(`${baseUrl}/contacts/${contact.id}`);
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), contact);
 
@@ -160,7 +161,7 @@ describe('leitura', () => {
 
   for (const id of ['999999999', 'abc', '0', '1%20OR%201=1']) {
     test(`GET /contacts/${id} devolve 404`, async () => {
-      const response = await fetch(`${baseUrl}/contacts/${id}`);
+      const response = await api(`${baseUrl}/contacts/${id}`);
       assert.equal(response.status, 404);
     });
   }
@@ -168,7 +169,7 @@ describe('leitura', () => {
   test('o nome é guardado literalmente, sem injeção de SQL', async () => {
     const name = "Robert'); DROP TABLE contacts;--";
     const contact = await createContact({ name });
-    const response = await fetch(`${baseUrl}/contacts/${contact.id}`);
+    const response = await api(`${baseUrl}/contacts/${contact.id}`);
     assert.equal((await response.json()).name, name);
   });
 });
@@ -230,15 +231,15 @@ describe('validação e comportamento ao editar', () => {
 describe('eliminação', () => {
   test('remove o registo e a fotografia', async () => {
     const contact = await createContact();
-    const response = await fetch(`${baseUrl}/contacts/${contact.id}`, { method: 'DELETE' });
+    const response = await api(`${baseUrl}/contacts/${contact.id}`, { method: 'DELETE' });
     assert.equal(response.status, 204);
     createdIds.delete(contact.id);
-    assert.equal((await fetch(`${baseUrl}/contacts/${contact.id}`)).status, 404);
+    assert.equal((await api(`${baseUrl}/contacts/${contact.id}`)).status, 404);
     assert.equal((await fetch(`${baseUrl}${contact.picture}`)).status, 404);
   });
 
   test('devolve 404 se o contacto não existir', async () => {
-    const response = await fetch(`${baseUrl}/contacts/999999999`, { method: 'DELETE' });
+    const response = await api(`${baseUrl}/contacts/999999999`, { method: 'DELETE' });
     assert.equal(response.status, 404);
   });
 });

@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
+import { asyncHandler } from '../async-handler.js';
+import { requireAuth } from '../auth.js';
 import {
   deleteContact,
   findAllContacts,
@@ -19,9 +21,6 @@ const parsePicture = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_PICTURE_BYTES, files: 1 }
 }).single('picture');
-
-// Express 4 does not catch errors from async handlers on its own.
-const asyncHandler = (handler) => (req, res, next) => handler(req, res, next).catch(next);
 
 const toResponse = (row) => ({
   id: row.id,
@@ -68,10 +67,13 @@ function sendDuplicateOrRethrow(err, res) {
   res.status(409).json({ errors });
 }
 
+// The list is the only public route; everything after this line requires a session.
 router.get('/', asyncHandler(async (req, res) => {
   const contacts = await findAllContacts();
   res.json(contacts.map(toResponse));
 }));
+
+router.use(requireAuth);
 
 router.get('/:id', asyncHandler(async (req, res) => {
   const contact = await findContact(req.params.id);

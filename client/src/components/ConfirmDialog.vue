@@ -34,7 +34,7 @@ function requestCancel() {
     <p v-if="error" class="field__error" role="alert">{{ error }}</p>
     <div class="dialog__actions">
       <button type="button" class="button" autofocus :disabled="busy" @click="requestCancel">Cancelar</button>
-      <button type="button" class="button button--danger" :disabled="busy" @click="$emit('confirm')">
+      <button type="button" class="button button--danger-solid" :disabled="busy" @click="$emit('confirm')">
         {{ busy ? 'A eliminar…' : confirmLabel }}
       </button>
     </div>

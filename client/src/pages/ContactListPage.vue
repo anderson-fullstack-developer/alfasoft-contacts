@@ -1,11 +1,15 @@
 <script setup>
 import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { deleteContact, listContacts } from '../api/contacts.js';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import ContactCard from '../components/ContactCard.vue';
 import StatusMessage from '../components/StatusMessage.vue';
+import { useAuth } from '../composables/useAuth.js';
 import { useNotification } from '../composables/useNotification.js';
 
+const router = useRouter();
+const { isAuthenticated } = useAuth();
 const { notify } = useNotification();
 
 const contacts = ref([]);
@@ -30,6 +34,10 @@ async function loadContacts() {
 }
 
 function askToDelete(contact) {
+  if (!isAuthenticated.value) {
+    router.push({ name: 'login' });
+    return;
+  }
   contactToDelete.value = contact;
   deleteError.value = '';
   dialogOpen.value = true;

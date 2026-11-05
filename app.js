@@ -1,18 +1,20 @@
 import { fileURLToPath } from 'node:url';
 import express from 'express';
+import authRouter from './controllers/auth.js';
 import contactsRouter from './controllers/contacts.js';
 import { UPLOADS_DIR, UPLOADS_URL } from './pictures.js';
 
 const PUBLIC_DIR = fileURLToPath(new URL('./public/', import.meta.url));
 
 // Explicit list, so the Vue fallback never captures /contacts, /uploads or /cloudcmd.
-const VUE_ROUTES = ['/', '/novo', '/ver/:id', '/editar/:id'];
+const VUE_ROUTES = ['/', '/login', '/novo', '/ver/:id', '/editar/:id'];
 
 const app = express();
 
 app.disable('x-powered-by');
 app.use(express.json());
 
+app.use('/auth', authRouter);
 app.use('/contacts', contactsRouter);
 app.use(UPLOADS_URL, express.static(UPLOADS_DIR));
 app.use(express.static(PUBLIC_DIR, { index: false }));
